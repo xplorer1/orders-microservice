@@ -1,77 +1,33 @@
-let ProductOrdersModel = require('../models/ProductOrdersModel.js');
+let ProductOrderModel = require('../models/ProductOrderModel.js');
+let Producer = require('../services/kafka-producer');
 
 let config = require('../../config');
+let uuid = require('node-uuid');
 
 module.exports = {
 
     placeOrder: async function(req, res) {
-        if(!req.body.product_id) return res.status(400).json({status: 400, message: "Item required."});
+        if(!req.body.product_id || !req.body.product_price || !req.body.product_name) return res.status(400).json({status: 400, message: "Supplied missing fields."});
 
         try {
-            let o
-            let updatecart = await ShoppingCartModel.findOneAndUpdate({user: user._id}, {$push: {"items" : req.body.item}}).exec();
-            if(!updatecart) return res.status(500).json({message: "Unable to update shopping cart", status: 500});
-            
-            return res.status(200).json({message: "Item added to cart.", status: 200});
-        } catch (error) {
-            return res.status(500).json({status: 500, message: error.message});
-        }
-    },
+            let order = new ProductOrderModel();
 
-    removeItemFromCart: async function(req, res) {
-        if(!req.body.item) return res.status(400).json({status: 400, message: "Item required."});
+            order.product_name = req.body.product_name;
+            order.product_id = req.body.product_id;
+            order.product_price = req.body.product_price;
+            order.order_id = uuid.v4().split('').splice(0, 20).join('').toUpperCase();
 
-        try {
-            let user = await UserModel.findOne({email: req.verified.email, role: "CUSTOMER"}).exec();
-            if(!user) return res.status(404).json({status: 404, message: "User not found."});
+            await order.save();
 
-            let usercart = await ShoppingCartModel.findOne({user: user._id});
-            if(!usercart) return res.status(404).json({status: 404, message: "User's cart not found."});
+            let data = {product_id: req.body.product_id};
 
-            if(!usercart.items.includes(req.body.item))  return res.status(500).json({message: "Item not found in cart.", status: 500});
+            Producer.sendRecord(data, function(err, success) {
+                if(err) console.log("err: ", err);
 
-            let existingcart = usercart.items;
-
-            existingcart = existingcart.filter(item => item.toString() !== req.body.item.toString());
-
-            let updatecart = await ShoppingCartModel.findOneAndUpdate({user: user._id}, {$set: {"items" : existingcart}}).exec();
-            if(!updatecart) return res.status(500).json({message: "Unable to update shopping cart", status: 500});
-
-            return res.status(200).json({message: "Item successfully removed", status: 200});
-
-        } catch (error) {
-            return res.status(500).json({status: 500, message: error.message});
-        }
-    },
-
-    makeAPurchase: async function(req, res) {
-        if(!req.body.items || !req.body.items.length) return res.status(400).json({status: 400, message: "Items required."});
-
-        try {
-            let user = await UserModel.findOne({email: req.verified.email, role: "CUSTOMER"}).exec();
-            if(!user) return res.status(404).json({status: 404, message: "User not found."});
-
-            let usercart = await ShoppingCartModel.findOne({user: user._id});
-            if(!usercart) return res.status(404).json({status: 404, message: "User's cart not found."});
-
-            let purchases = [];
-            req.body.items.forEach(item => {
-                let obj = {};
-
-                obj["price"] = item.price;
-                obj["item"] = item.item;
-                obj["orderid"] = config.generateCode(10);
-                obj["user"] = user._id;
-
-                purchases.push(obj);
+                console.log("success: ", success);
             });
-
-            let insertmanypurchases = await ItemOrdersModel.create(purchases);
-
-            if(!insertmanypurchases) return res.status(500).json({message: "Unable to update orders", status: 500});
             
-            return res.status(200).json({message: "Purchase successful.", status: 200});
-
+            return res.status(200).json({message: "Order placed.", status: 200});
         } catch (error) {
             return res.status(500).json({status: 500, message: error.message});
         }

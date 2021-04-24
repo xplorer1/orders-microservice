@@ -1,8 +1,10 @@
-import kafka from "kafka-node";
-import uuid from "uuid";
-const config = require('../config');
+const kafka = require("kafka-node");
+const uuid = require("node-uuid");
+const config = require('../../config');
 
-const client = new kafka.Client("http://localhost:2181", "my-client-id", {
+//new kafka.KafkaClient();
+
+const client = new kafka.KafkaClient("http://localhost:2181", "iron-phantom-justice-storm-fury-desert", {
     sessionTimeout: 300,
     spinDelay: 100,
     retries: 2
@@ -20,10 +22,7 @@ producer.on("error", function(error) {
 
 const KafkaService = {
     sendRecord: (data, callback = () => {}) => {
-        if (!userId) {
-            return callback(new Error("A userId must be provided."));
-        }
-
+    
         const event = {
             id: uuid.v4(),
             timestamp: Date.now(),
@@ -46,4 +45,4 @@ const KafkaService = {
     }
 };
 
-export default KafkaService;
+module.exports = KafkaService;
