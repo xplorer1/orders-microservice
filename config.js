@@ -4,6 +4,7 @@ module.exports = {
     'database' : 'mongodb+srv://phantom-admin:Pe4NFrsQFz2Pv2pX@cluster0.08uuj.mongodb.net/ordersdb?retryWrites=true&w=majority',
 
     'secret': 'hlvsog5NVcZphKxpJPPBBoMww9XRNZ-_h51osqyBqPg',
+    'products_service' : "http://localhost:9500",
     generateCode: function (len) {
         var length = len,
             charset = "01234567890ABCDEFGHIJKLMNOPQRSTUVWXY",

@@ -1,8 +1,5 @@
 const kafka = require("kafka-node");
 const uuid = require("node-uuid");
-const config = require('../../config');
-
-//new kafka.KafkaClient();
 
 const client = new kafka.KafkaClient("http://localhost:2181", "iron-phantom-justice-storm-fury-desert", {
     sessionTimeout: 300,
@@ -10,35 +7,36 @@ const client = new kafka.KafkaClient("http://localhost:2181", "iron-phantom-just
     retries: 2
 });
 
-const producer = new kafka.HighLevelProducer(client);
+const Producer = kafka.Producer;
+//const client = new kafka.KafkaClient('localhost:2181');
+const producer = new Producer(client);
+
+//const producer = new kafka.HighLevelProducer(client);
 producer.on("ready", function() {
     console.log("Kafka Producer is connected and ready.");
 });
 
 // to handle this error.
 producer.on("error", function(error) {
-    console.error(error);
+    console.log("error: ", error);
 });
 
 const KafkaService = {
-    sendRecord: (data, callback = () => {}) => {
+    sendRecord: (data, callback = (err, data) => {console.log(err, data)}) => {
     
         const event = {
             id: uuid.v4(),
             timestamp: Date.now(),
-            data: data
+            data: "data"
         };
 
-        const buffer = new Buffer.from(JSON.stringify(event));
+        //const buffer = new Buffer.from();
 
         // Create a new payload
-        const record = [
-            {
+        const record = [{
                 topic: "order_events",
-                messages: buffer,
-                attributes: 1 /* Use GZip compression for the payload */
-            }
-        ];
+                messages: JSON.stringify(event)
+            }];
 
         //Send record to Kafka and log result/error
         producer.send(record, callback);
