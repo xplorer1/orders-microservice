@@ -14,6 +14,21 @@ const producer = kafka.producer();
 
 const products_service = config.products_service;
 
+sendMessage = (product_id) => {
+    await order.save();
+
+    await producer.connect();
+
+    let data = {product_id: product_id};
+
+    await producer.send({
+        topic: 'order_events',
+        messages: [
+            { value: product_id },
+        ],
+    });
+}
+
 module.exports = {
 
     placeOrder: async function(req, res) {
@@ -37,18 +52,7 @@ module.exports = {
                     order.product_price = response.data.product_price;
                     order.order_id = uuid.v4().split('').splice(0, 20).join('').toUpperCase();
 
-                    await order.save();
-
-                    await producer.connect();
-
-                    let data = {product_id: req.body.product_id};
-
-                    await producer.send({
-                        topic: 'order_events',
-                        messages: [
-                            { value: req.body.product_id },
-                        ],
-                    });
+                    sendMessage(req.body.product_id);
 
                     return res.status(200).json({message: "Order placed.", status: 200});
                           
