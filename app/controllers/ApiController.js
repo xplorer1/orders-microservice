@@ -14,8 +14,7 @@ const producer = kafka.producer();
 
 const products_service = config.products_service;
 
-sendMessage = (product_id) => {
-    await order.save();
+sendMessage = async (product_id) => {
 
     await producer.connect();
 
@@ -51,6 +50,8 @@ module.exports = {
                     order.product_id = req.body.product_id;
                     order.product_price = response.data.product_price;
                     order.order_id = uuid.v4().split('').splice(0, 20).join('').toUpperCase();
+
+                    await order.save();
 
                     sendMessage(req.body.product_id);
 
